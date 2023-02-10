@@ -2,12 +2,13 @@ import React from "react";
 import axios from "axios";
 import { BrowserRouter as Router, Route, Link, Routes } from "react-router-dom";
 import { Button, Divider, Container } from "@material-ui/core";
-
+import { setPatientList, setDiagnoses } from "./state";
 import { apiBaseUrl } from "./constants";
 import { useStateValue } from "./state";
-import { Patient } from "./types";
+import { Patient, Diagnosis } from "./types";
 
 import PatientListPage from "./PatientListPage";
+import PatientDetailPage from "./PatientDetailPage";
 import { Typography } from "@material-ui/core";
 
 const App = () => {
@@ -20,11 +21,23 @@ const App = () => {
         const { data: patientListFromApi } = await axios.get<Patient[]>(
           `${apiBaseUrl}/patients`
         );
-        dispatch({ type: "SET_PATIENT_LIST", payload: patientListFromApi });
+        dispatch(setPatientList(patientListFromApi));
       } catch (e) {
         console.error(e);
       }
     };
+    const fetchDiagnoses = async () => {
+			try {
+				const { data: diagnoses } = await axios.get<Diagnosis[]>(
+					`${apiBaseUrl}/diagnosis`
+				);
+				dispatch(setDiagnoses(diagnoses));
+			} catch (e) {
+				console.error(e);
+			}
+		};
+
+		void fetchDiagnoses();
     void fetchPatientList();
   }, [dispatch]);
 
@@ -41,6 +54,8 @@ const App = () => {
           <Divider hidden />
           <Routes>
             <Route path="/" element={<PatientListPage />} />
+            <Route path="/patients" element={<PatientListPage />} />
+            <Route path="/patients/:id" element={<PatientDetailPage />} />
           </Routes>
         </Container>
       </Router>
