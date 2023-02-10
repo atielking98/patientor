@@ -3,8 +3,8 @@ import axios from "axios";
 import { useParams } from "react-router-dom";
 import { apiBaseUrl } from "../constants";
 import { useStateValue, updatePatient } from "../state";
-import { PatientDetailed, Gender } from "../types";
-import { Loader, Card, Icon } from "semantic-ui-react";
+import { PatientDetailed, Gender, Entry } from "../types";
+import { Loader, Card, Icon, Header, Feed, Segment, List } from "semantic-ui-react";
 
 const genderBadge = (gender: Gender) => {
 	switch (gender) {
@@ -15,6 +15,41 @@ const genderBadge = (gender: Gender) => {
 		case Gender.Other:
 			return "genderless";
 	}
+};
+
+const EntryItem: React.FC<{ entry: Entry; }> = ({ entry }) => {
+	const [{ diagnoses }] = useStateValue();
+	console.log(diagnoses);
+	const diagnosisName = (c: string): string => {
+		return diagnoses[c] ? diagnoses[c].name : c;
+	};
+	return (
+		<Feed.Event>
+			<Feed.Label icon="marker" />
+			<Feed.Content>
+				<Feed.Date>{entry.date}</Feed.Date>
+				<Feed.Summary>{entry.description}</Feed.Summary>
+				<Feed.Extra>
+					<List celled>
+						{entry.diagnosisCodes && entry.diagnosisCodes.map(
+							c => (
+								<List.Item key={c} as="a">
+									<Icon name='triangle right' />
+									<List.Content>
+										<List.Header>{c}</List.Header>
+										<List.Description>
+											{diagnosisName(c)}
+										</List.Description>
+									</List.Content>
+								</List.Item>
+							)
+						)}
+					</List>
+					{/* <EntryDetails entry={entry} /> */}
+				</Feed.Extra>
+			</Feed.Content>
+		</Feed.Event>
+	);
 };
 
 const PatientDetailPage = () => {
@@ -42,7 +77,6 @@ const PatientDetailPage = () => {
 	if (!(patient && 'ssn' in patient)) {
 		return <Loader size="big" indeterminate active content="Loading" />;
 	}
-    console.log(patient);
     return <div>
         <h1></h1>
 		<Card>
@@ -61,6 +95,17 @@ const PatientDetailPage = () => {
 				<span><Icon name="id badge" />{patient.ssn}</span>
 			</Card.Content>
 		</Card>
+		<Header content="Entries" icon="clipboard" />
+		<Feed size='large'>
+			{patient.entries && patient.entries.length > 0 ?
+				patient.entries.map(e => (
+					<EntryItem key={e.id} entry={e} />
+				)) :
+				<Segment placeholder>
+					<Header>No entries are listed for this patient</Header>
+				</Segment>
+			}
+		</Feed>
     </div>;
 };
 
