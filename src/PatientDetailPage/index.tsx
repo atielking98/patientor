@@ -4,7 +4,10 @@ import { useParams } from "react-router-dom";
 import { apiBaseUrl } from "../constants";
 import { useStateValue, updatePatient } from "../state";
 import { assertNever, PatientDetailed, Gender, Entry, HealthCheckEntry, OccupationalHealthcareEntry, HospitalEntry } from "../types";
-import { Loader, Card, Label, Rating, Icon, Header, Feed, Segment, List } from "semantic-ui-react";
+import { Button, Loader, Card, Label, Rating, Icon, Header, Feed, Segment, List } from "semantic-ui-react";
+import { EntryFormValues } from "../AddEntryModal/AddEntryForm";
+import AddEntryModal from "../AddEntryModal";
+import { addEntry } from "../state";
 
 const genderBadge = (gender: Gender) => {
 	switch (gender) {
@@ -113,7 +116,8 @@ const PatientDetailPage = () => {
     const { id } = useParams<{ id: string; }>();
     if (!id) return <div></div>;
     const [{ patients: { [id]: patient } }, dispatch] = useStateValue();
-
+	const [modalOpen, setModalOpen] = React.useState<boolean>(false);
+	const [error, setError] = React.useState<string | undefined>();
 	React.useEffect(() => {
 		if (!patient || 'ssn' in patient) {
 			return;
@@ -130,6 +134,28 @@ const PatientDetailPage = () => {
 		};
 		void getDetail();
 	}, [id, patient, dispatch]);
+
+	const openModal = (): void => setModalOpen(true);
+
+	const closeModal = (): void => {
+		setModalOpen(false);
+		setError(undefined);
+	};
+
+	const submitNewPatient = async (values: EntryFormValues) => {
+		try {
+			const { data: newEntry } = await axios.post<Entry>(
+				`${apiBaseUrl}/patients/${id}/entries`,
+				values
+			);
+			dispatch(addEntry(id, newEntry));
+			closeModal();
+		} catch (e) {
+			console.error(e.response.data);
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+			setError(e.response.data.error);
+		}
+	};
 
 	if (!(patient && 'ssn' in patient)) {
 		return <Loader size="big" indeterminate active content="Loading" />;
@@ -154,6 +180,7 @@ const PatientDetailPage = () => {
 		</Card>
 		<Header content="Entries" icon="clipboard" />
 		<Feed size='large'>
+			<Button onClick={() => openModal()}>Add New Entry</Button>
 			{patient.entries && patient.entries.length > 0 ?
 				patient.entries.map(e => (
 					<EntryItem key={e.id} entry={e} />
@@ -163,6 +190,12 @@ const PatientDetailPage = () => {
 				</Segment>
 			}
 		</Feed>
+		<AddEntryModal
+				modalOpen={modalOpen}
+				onSubmit={submitNewPatient}
+				error={error}
+				onClose={closeModal}
+		/>
     </div>;
 };
 

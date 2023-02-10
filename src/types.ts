@@ -58,6 +58,8 @@ export type Entry =
   | OccupationalHealthcareEntry
   | HealthCheckEntry;
 
+export const EntryOptions = ['HealthCheck', 'OccupationalHealthcare', 'Hospital'];
+
 export interface Patient {
   id: string;
   name: string;
