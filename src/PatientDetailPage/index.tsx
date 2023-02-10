@@ -3,8 +3,8 @@ import axios from "axios";
 import { useParams } from "react-router-dom";
 import { apiBaseUrl } from "../constants";
 import { useStateValue, updatePatient } from "../state";
-import { PatientDetailed, Gender, Entry } from "../types";
-import { Loader, Card, Icon, Header, Feed, Segment, List } from "semantic-ui-react";
+import { assertNever, PatientDetailed, Gender, Entry, HealthCheckEntry, OccupationalHealthcareEntry, HospitalEntry } from "../types";
+import { Loader, Card, Label, Rating, Icon, Header, Feed, Segment, List } from "semantic-ui-react";
 
 const genderBadge = (gender: Gender) => {
 	switch (gender) {
@@ -17,9 +17,66 @@ const genderBadge = (gender: Gender) => {
 	}
 };
 
+const HealthCheckEntryDetails: React.FC<{ entry: HealthCheckEntry; }> = ({ entry }) => {
+	return (
+		<Segment raised>
+			<Rating icon="heart" rating={4 - entry.healthCheckRating} maxRating={4} disabled />
+			<Icon name="doctor" />{entry.specialist}
+		</Segment>
+	);
+};
+
+const HospitalEntryDetails: React.FC<{ entry: HospitalEntry; }> = ({ entry }) => {
+	return (
+		<Segment raised>
+			<Label color="orange" ribbon>{entry.discharge.date}</Label>
+			<p>{entry.discharge.criteria}</p>
+			<Icon name="doctor" />{entry.specialist}
+		</Segment>
+	);
+};
+
+const OccupationalHealthcareDetails: React.FC<{ entry: OccupationalHealthcareEntry; }> = ({ entry }) => {
+	return (
+		<Segment raised>
+			<Label>
+				Employer
+				<Label.Detail>{entry.employerName}</Label.Detail>
+			</Label>
+			{entry.sickLeave ?
+				(<>
+					<Header>Sick Leave</Header>
+					<Label>
+						Starting on:
+						<Label.Detail>{entry.sickLeave.startDate}</Label.Detail>
+					</Label>
+					<Label>
+						Ended on:
+						<Label.Detail>{entry.sickLeave.endDate}</Label.Detail>
+					</Label>
+				</>)
+				: null}
+			<Icon name="doctor" />{entry.specialist}
+		</Segment>
+	);
+};
+
+const EntryDetails: React.FC<{ entry: Entry; }> = ({ entry }) => {
+	switch (entry.type) {
+		case "HealthCheck":
+			return <HealthCheckEntryDetails entry={entry} />;
+		case "Hospital":
+			return <HospitalEntryDetails entry={entry} />;
+		case "OccupationalHealthcare":
+			return <OccupationalHealthcareDetails entry={entry} />;
+		default:
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+			return assertNever(entry);
+	}
+};
+
 const EntryItem: React.FC<{ entry: Entry; }> = ({ entry }) => {
 	const [{ diagnoses }] = useStateValue();
-	console.log(diagnoses);
 	const diagnosisName = (c: string): string => {
 		return diagnoses[c] ? diagnoses[c].name : c;
 	};
@@ -45,7 +102,7 @@ const EntryItem: React.FC<{ entry: Entry; }> = ({ entry }) => {
 							)
 						)}
 					</List>
-					{/* <EntryDetails entry={entry} /> */}
+					<EntryDetails entry={entry} />
 				</Feed.Extra>
 			</Feed.Content>
 		</Feed.Event>
